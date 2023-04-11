@@ -35,17 +35,18 @@ yarn add nestjs-supabase-auth
 In this example, I'm passing supabase related options through dotenv and [env-cmd](https://github.com/toddbluhm/env-cmd) package. 
 
 ```ts
-import { Injectable } from '@nestjs/common';
-import { PassportStrategy } from '@nestjs/passport';
-import { ExtractJwt } from 'passport-jwt';
-import { SupabaseAuthStrategy } from 'nestjs-supabase-auth';
+import { Injectable } from "@nestjs/common";
+import { PassportStrategy } from "@nestjs/passport";
+import { ExtractJwt } from "passport-jwt";
+import { SupabaseAuthStrategy, SupabaseAuthUser } from "@h-sw/nestjs-supabase-auth";
 
 @Injectable()
 export class SupabaseStrategy extends PassportStrategy(
   SupabaseAuthStrategy,
-  'supabase',
+  "supabase",
 ) {
-  public constructor() {
+  public constructor () {
+    console.log(ExtractJwt.fromAuthHeaderAsBearerToken())
     super({
       supabaseUrl: process.env.SUPABASE_URL,
       supabaseKey: process.env.SUPABASE_KEY,
@@ -55,12 +56,12 @@ export class SupabaseStrategy extends PassportStrategy(
     });
   }
 
-  async validate(payload: any): Promise<any> {
-    super.validate(payload);
+  async validate (user: SupabaseAuthUser) {
+    return super.validate(user);
   }
 
-  authenticate(req) { 
-    super.authenticate(req);
+  authenticate (req: never) {
+    return super.authenticate(req);
   }
 }
 ```
@@ -90,59 +91,36 @@ export class AuthModule {}
 
 #### Example for Graphql
 
-gql-auth-guard.ts
+supabase.guard.ts
 ```ts
-import { ExecutionContext, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { GqlExecutionContext } from '@nestjs/graphql';
 
 @Injectable()
-export class GqlAuthGuard extends AuthGuard('supabase') {
-  getRequest(context: ExecutionContext) {
-    const ctx = GqlExecutionContext.create(context);
-    return ctx.getContext().req;
-  }
-}
-```
-
-auth.resolver - You can use the guard in any resolver. 
-
-```ts
-import { UseGuards } from '@nestjs/common';
-import { Args, Context, Query, Mutation, Resolver } from '@nestjs/graphql';
-import { GqlAuthGuard } from 'src/common/guards/auth.guard';
-import { CurrentUser } from '../../common/decorators/current-user';
-import { IUser } from '../user/models/user.interface';
-import { AuthService } from './auth.service';
-import { SignupInput } from './dto/signup.input';
-import { AuthResult } from './models/auth-result';
-import { AuthUser as SupabaseAuthUser } from '@supabase/supabase-js';
-import { LoginInput } from './dto/login.input';
-
-@Resolver()
-export class AuthResolver {
-  constructor(private readonly authService: AuthService) {}
-
-  @Query(() => IUser, { name: 'viewer' })
-  @UseGuards(GqlAuthGuard)
-  async me(@CurrentUser() user: SupabaseAuthUser) {
-    return user;
-  }
-  ...
-}
-
+export class SupabaseGuard extends AuthGuard('supabase') {}
 ```
 
 ### CurrentUser decorator
 
 ```ts
 import { createParamDecorator, ExecutionContext } from "@nestjs/common";
-import { GqlExecutionContext } from "@nestjs/graphql";
+import { SupabaseAuthUser } from "@h-sw/nestjs-supabase-auth";
 
-export const CurrentUser = createParamDecorator(
+export type SupabaseAuthRequest = Partial<Request> & { user?: SupabaseAuthUser };
+
+export const User = createParamDecorator(
   (_data: unknown, context: ExecutionContext) => {
-    const ctx = GqlExecutionContext.create(context);
-    return ctx.getContext().req.user;
+    const request = context.switchToHttp().getRequest<SupabaseAuthRequest>();
+
+    return request.user;
+  },
+);
+
+export const UserId = createParamDecorator(
+  (_data: unknown, context: ExecutionContext) => {
+    const request = context.switchToHttp().getRequest<SupabaseAuthRequest>();
+
+    return parseInt(request.user?.user_metadata.sub as string, 10);
   },
 );
 

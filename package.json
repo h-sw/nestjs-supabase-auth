@@ -18,7 +18,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/hiro1107/nestjs-supabase-auth.git"
+    "url": "https://github.com/h-sw/nestjs-supabase-auth.git"
   },
   "keywords": [
     "nestjs",
@@ -32,9 +32,9 @@
   "author": "Atsuhiro Teshima",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/hiro1107/nestjs-supabase-auth/issues"
+    "url": "https://github.com/h-sw/nestjs-supabase-auth.git/issues"
   },
-  "homepage": "https://github.com/hiro1107/nestjs-supabase-auth",
+  "homepage": "https://github.com/h-sw/nestjs-supabase-auth.git",
   "devDependencies": {
     "@supabase/supabase-js": "^1.1.4",
     "@types/jest": "^26.0.20",
